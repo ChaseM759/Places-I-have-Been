@@ -417,8 +417,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--visited); }
 .storage-badge {
   position: absolute;
   z-index: 4;
-  right: 18px;
-  bottom: 18px;
+  top: auto !important;
+  right: 18px !important;
+  bottom: 18px !important;
+  left: auto !important;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -429,7 +431,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--visited); }
 }
 
 body:not(.menu-collapsed) .storage-badge {
-  right: 338px;
+  right: 338px !important;
 }
 
 .storage-badge.is-remote {
@@ -837,7 +839,9 @@ body:not(.menu-collapsed) .storage-badge {
   }
 
   .storage-badge {
-    right: 18px;
-    bottom: 18px;
+    top: auto !important;
+    right: 18px !important;
+    bottom: 18px !important;
+    left: auto !important;
   }
 }
