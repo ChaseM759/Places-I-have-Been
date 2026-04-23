@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
     <script>
       window.travelFirebaseConfig = {
@@ -22,6 +23,16 @@
     <script defer src="script.js"></script>
   </head>
   <body class="menu-collapsed">
+    <div id="authGate" class="auth-gate">
+      <section class="auth-card" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+        <p class="auth-eyebrow">Private Access</p>
+        <h1 id="authTitle">Sign In</h1>
+        <p class="auth-copy">Use Google sign-in to access your private travel map.</p>
+        <button id="signInButton" class="auth-button" type="button">Sign In With Google</button>
+        <p id="authMessage" class="auth-message">Sign in to load your profiles and map data.</p>
+      </section>
+    </div>
+
     <aside class="sidebar" aria-label="Travel map menu">
       <button id="menuToggle" class="sidebar-toggle" type="button" aria-expanded="false" aria-label="Open menu">
         Menu
@@ -70,6 +81,7 @@
 
       <section class="panel-section profile-section divided-section">
         <h2>User</h2>
+        <p id="authStatus" class="auth-status">Not signed in</p>
         <label class="profile-label">
           Current profile
           <select id="profileSelect"></select>
@@ -78,6 +90,7 @@
           <input id="profileNameInput" type="text" placeholder="New user name" autocomplete="off" />
           <button type="submit">Add User</button>
         </form>
+        <button id="signOutButton" class="sign-out-button" type="button">Sign Out</button>
       </section>
 
       <section class="panel-section delete-profile-section">
@@ -94,6 +107,8 @@
         <button id="zoomReset" type="button">Reset</button>
         <button id="timelineToggle" type="button">Timeline</button>
       </div>
+
+      <div id="storageBadge" class="storage-badge">Local only</div>
 
       <svg id="travelMap" viewBox="0 0 1200 720" role="img" aria-label="World map with visited countries and US states highlighted"></svg>
       <div id="tooltip" class="tooltip" hidden></div>

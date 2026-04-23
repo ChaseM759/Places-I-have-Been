@@ -33,12 +33,78 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+body.is-locked {
+  overflow: hidden;
+}
+
 body.menu-collapsed {
   grid-template-columns: 1fr;
 }
 
 button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
+
+.auth-gate {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.78);
+}
+
+.auth-card {
+  width: min(420px, 100%);
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.46);
+}
+
+.auth-eyebrow {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-card h1 {
+  margin: 0 0 16px;
+  font-size: 1.8rem;
+}
+
+.auth-copy {
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.auth-button {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  color: #03100a;
+  background: var(--visited);
+  font-weight: 800;
+}
+
+.auth-button:hover {
+  background: var(--visited-bright);
+}
+
+.auth-message {
+  margin: 14px 0 0;
+  color: var(--muted);
+}
+
+.auth-message.is-error {
+  color: var(--danger);
+}
 
 .sidebar {
   position: relative;
@@ -197,6 +263,27 @@ input:focus, textarea:focus, select:focus { border-color: var(--visited); }
   margin-top: 12px;
 }
 
+.auth-status {
+  margin: 0 0 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.sign-out-button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: #080b0d;
+  font-weight: 800;
+}
+
+.sign-out-button:hover {
+  border-color: var(--visited);
+}
+
 .stats-stack {
   display: grid;
   gap: 10px;
@@ -325,6 +412,28 @@ input:focus, textarea:focus, select:focus { border-color: var(--visited); }
   left: 18px;
   display: flex;
   gap: 8px;
+}
+
+.storage-badge {
+  position: absolute;
+  z-index: 4;
+  top: 18px;
+  right: 18px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(8, 11, 13, 0.92);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.storage-badge.is-remote {
+  color: var(--visited-bright);
+}
+
+.storage-badge.is-local {
+  color: #ffd37a;
 }
 
 .zoom-controls button,
@@ -721,5 +830,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--visited); }
   #travelMap {
     height: 70vh;
     min-height: 440px;
+  }
+
+  .storage-badge {
+    top: 72px;
+    right: 18px;
   }
 }

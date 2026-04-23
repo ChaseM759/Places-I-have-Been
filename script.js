@@ -6,6 +6,7 @@ const ACTIVE_PROFILE_KEY = "places-i-have-travelled.activeProfile";
 const PROFILE_COLLECTION = "travelProfiles";
 const TOTAL_WORLD_COUNTRIES = 177;
 const TOTAL_US_STATES = 50;
+const USER_COLLECTION = "users";
 const MICROCOUNTRIES = [
   { id: "020", name: "Andorra", continent: "Europe", coordinates: [1.5218, 42.5063] },
   { id: "438", name: "Liechtenstein", continent: "Europe", coordinates: [9.5554, 47.166] },
@@ -170,7 +171,11 @@ const app = {
   profiles: [],
   activeProfileId: "default",
   db: null,
-  useRemoteData: false
+  auth: null,
+  currentUser: null,
+  authProvider: null,
+  useRemoteData: false,
+  hasStarted: false
 };
 
 const defaultEntries = [
@@ -189,6 +194,12 @@ document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
   bindUi();
+  document.body.classList.add("is-locked");
+  initializeDatabase();
+  setupAuth();
+}
+
+async function startApp() {
   showLoading();
 
   try {
@@ -238,7 +249,6 @@ async function init() {
     loadEntriesFromLocal();
     renderMap();
     refreshPanels();
-    initializeDatabase();
     void syncRemoteState();
   } catch (error) {
     const svg = d3.select("#travelMap");
@@ -255,6 +265,8 @@ async function init() {
 
 function bindUi() {
   document.querySelector("#menuToggle").addEventListener("click", toggleMenu);
+  document.querySelector("#signInButton").addEventListener("click", signInWithGoogle);
+  document.querySelector("#signOutButton").addEventListener("click", signOutCurrentUser);
   document.querySelector("#profileSelect").addEventListener("change", switchProfile);
   document.querySelector("#profileForm").addEventListener("submit", addProfile);
   document.querySelector("#deleteProfileButton").addEventListener("click", deleteActiveProfile);
@@ -330,12 +342,75 @@ function initializeDatabase() {
     if (!firebase.apps.length) {
       firebase.initializeApp(window.travelFirebaseConfig);
     }
+    app.auth = firebase.auth();
     app.db = firebase.firestore();
+    app.authProvider = new firebase.auth.GoogleAuthProvider();
     app.useRemoteData = true;
   } catch (error) {
+    app.auth = null;
     app.db = null;
     app.useRemoteData = false;
   }
+}
+
+function setupAuth() {
+  const gate = document.querySelector("#authGate");
+  if (!app.auth) {
+    gate.hidden = true;
+    document.body.classList.remove("is-locked");
+    void startApp();
+    return;
+  }
+
+  app.auth.onAuthStateChanged(async (user) => {
+    app.currentUser = user;
+    renderAuthStatus();
+    if (!user) {
+      gate.hidden = false;
+      document.body.classList.add("is-locked");
+      app.profiles = [];
+      app.places = new Map();
+      if (app.hasStarted) {
+        refreshPanels();
+        d3.select("#travelMap").selectAll("*").remove();
+        showLoading();
+      }
+      return;
+    }
+
+    gate.hidden = true;
+    document.body.classList.remove("is-locked");
+    if (!app.hasStarted) {
+      app.hasStarted = true;
+      await startApp();
+      return;
+    }
+
+    await loadProfiles();
+    await loadEntries();
+    updateRegionStyles();
+    refreshPanels();
+  });
+}
+
+async function signInWithGoogle() {
+  const message = document.querySelector("#authMessage");
+  message.classList.remove("is-error");
+  try {
+    await app.auth.signInWithPopup(app.authProvider);
+  } catch (error) {
+    if (error.code === "auth/popup-blocked" || error.code === "auth/operation-not-supported-in-this-environment") {
+      await app.auth.signInWithRedirect(app.authProvider);
+      return;
+    }
+    message.textContent = "Google sign-in did not complete.";
+    message.classList.add("is-error");
+  }
+}
+
+async function signOutCurrentUser() {
+  if (!app.auth) return;
+  await app.auth.signOut();
 }
 
 async function loadProfiles() {
@@ -352,10 +427,10 @@ async function loadProfiles() {
 
 async function loadProfilesFromFirestore() {
   try {
-    const snapshot = await app.db.collection(PROFILE_COLLECTION).get();
+    const snapshot = await profileCollectionRef().get();
     if (snapshot.empty) {
       await migrateLocalProfilesToFirestore();
-      const migratedSnapshot = await app.db.collection(PROFILE_COLLECTION).get();
+      const migratedSnapshot = await profileCollectionRef().get();
       app.profiles = migratedSnapshot.docs.map((doc) => ({ id: doc.id, name: doc.data().name || doc.id }));
     } else {
       app.profiles = snapshot.docs.map((doc) => ({ id: doc.id, name: doc.data().name || doc.id }));
@@ -431,7 +506,7 @@ async function loadEntries() {
 async function loadEntriesFromFirestore() {
   let entries = defaultEntries;
   try {
-    const doc = await app.db.collection(PROFILE_COLLECTION).doc(app.activeProfileId).get();
+    const doc = await profileCollectionRef().doc(app.activeProfileId).get();
     if (doc.exists) {
       const data = doc.data() || {};
       if (Array.isArray(data.entries)) entries = data.entries;
@@ -628,12 +703,32 @@ function togglePercentages() {
 }
 
 function refreshPanels() {
+  renderStorageBadge();
   renderBrandTitle();
   renderProfiles();
   renderVisitedList();
   renderContinents();
   renderPercentages();
   renderTimeline();
+}
+
+function renderStorageBadge() {
+  const badge = document.querySelector("#storageBadge");
+  if (!badge) return;
+  badge.classList.remove("is-remote", "is-local");
+  if (app.useRemoteData && app.db && app.currentUser) {
+    badge.textContent = "Firebase connected";
+    badge.classList.add("is-remote");
+  } else {
+    badge.textContent = app.auth ? "Sign in required" : "Local only";
+    badge.classList.add("is-local");
+  }
+}
+
+function renderAuthStatus() {
+  const status = document.querySelector("#authStatus");
+  if (!status) return;
+  status.textContent = app.currentUser ? `Signed in as ${app.currentUser.email || "Google user"}` : "Not signed in";
 }
 
 function renderBrandTitle() {
@@ -687,7 +782,7 @@ async function deleteActiveProfile() {
   if (!window.confirm(`Delete ${name} and its saved map?`)) return;
 
   if (app.useRemoteData && app.db) {
-    await app.db.collection(PROFILE_COLLECTION).doc(app.activeProfileId).delete();
+    await profileCollectionRef().doc(app.activeProfileId).delete();
   } else {
     localStorage.removeItem(profileStorageKey(app.activeProfileId));
   }
@@ -1189,12 +1284,16 @@ function getLocalEntriesForMigration(profileId) {
 }
 
 async function ensureRemoteProfile(profile, entries) {
-  if (!app.db) return;
-  await app.db.collection(PROFILE_COLLECTION).doc(profile.id).set({
+  if (!app.db || !app.currentUser) return;
+  await profileCollectionRef().doc(profile.id).set({
     name: profile.name,
     entries: entries.map(normalizeEntry),
     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge: true });
+}
+
+function profileCollectionRef() {
+  return app.db.collection(USER_COLLECTION).doc(app.currentUser.uid).collection(PROFILE_COLLECTION);
 }
 
 function getVisits(place) {
