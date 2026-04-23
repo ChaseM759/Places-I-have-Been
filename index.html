@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Places I Have Travelled</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+    <script>
+      window.travelFirebaseConfig = {
+        apiKey: "AIzaSyBg4lJIojtvwKkICiXMwQhAxBdZv2CsGjQ",
+        authDomain: "places-website-14201.firebaseapp.com",
+        projectId: "places-website-14201",
+        storageBucket: "places-website-14201.firebasestorage.app",
+        messagingSenderId: "950967093024",
+        appId: "1:950967093024:web:99b75c25ca363abc0ab945"
+      };
+    </script>
+    <script defer src="script.js"></script>
+  </head>
+  <body class="menu-collapsed">
+    <aside class="sidebar" aria-label="Travel map menu">
+      <button id="menuToggle" class="sidebar-toggle" type="button" aria-expanded="false" aria-label="Open menu">
+        Menu
+      </button>
+      <div class="sidebar-header-divider" aria-hidden="true"></div>
+
+      <div class="brand-block">
+        <p>Travel Map</p>
+        <h1 id="brandTitle">Places I Have Travelled</h1>
+      </div>
+
+      <section class="panel-section divided-section">
+        <button id="addNewButton" class="add-button" type="button">Add New</button>
+      </section>
+
+      <section class="panel-section">
+        <h2>Search</h2>
+        <form id="searchForm" class="search-form">
+          <input id="searchInput" type="search" placeholder="Search country or US state" autocomplete="off" />
+          <button type="submit">Search</button>
+        </form>
+        <div id="searchResult" class="result-box">Search for a country or US state to see details.</div>
+      </section>
+
+      <section class="panel-section visited-panel divided-section">
+        <button id="visitedToggle" class="menu-toggle" type="button">
+          Visited <span aria-hidden="true">+</span>
+        </button>
+        <div id="visitedList" class="visited-list" hidden></div>
+      </section>
+
+      <section class="panel-section divided-section">
+        <h2>Stats</h2>
+        <div class="stats-stack">
+          <button id="continentToggle" class="menu-toggle" type="button">
+            Continents <span aria-hidden="true">+</span>
+          </button>
+          <div id="continentList" class="continent-list" hidden></div>
+
+          <button id="percentToggle" class="menu-toggle" type="button">
+            Percentages <span aria-hidden="true">+</span>
+          </button>
+          <div id="percentList" class="percent-list" hidden></div>
+        </div>
+      </section>
+
+      <section class="panel-section profile-section divided-section">
+        <h2>User</h2>
+        <label class="profile-label">
+          Current profile
+          <select id="profileSelect"></select>
+        </label>
+        <form id="profileForm" class="profile-form">
+          <input id="profileNameInput" type="text" placeholder="New user name" autocomplete="off" />
+          <button type="submit">Add User</button>
+        </form>
+      </section>
+
+      <section class="panel-section delete-profile-section">
+        <button id="deleteProfileButton" class="delete-profile-button" type="button">
+          Delete This Profile
+        </button>
+      </section>
+    </aside>
+
+    <main class="map-shell">
+      <div class="zoom-controls" aria-label="Map zoom controls">
+        <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
+        <button id="zoomOut" type="button" aria-label="Zoom out">-</button>
+        <button id="zoomReset" type="button">Reset</button>
+        <button id="timelineToggle" type="button">Timeline</button>
+      </div>
+
+      <svg id="travelMap" viewBox="0 0 1200 720" role="img" aria-label="World map with visited countries and US states highlighted"></svg>
+      <div id="tooltip" class="tooltip" hidden></div>
+
+      <article id="detailSlide" class="detail-slide" aria-live="polite" hidden>
+        <button id="closeDetail" class="close-button" type="button">Close</button>
+        <button id="editDetail" class="edit-button" type="button" hidden aria-label="Edit place">Edit</button>
+        <p id="detailType"></p>
+        <h2 id="detailTitle"></h2>
+        <p id="detailMeta"></p>
+        <p id="detailDescription"></p>
+        <div id="detailVisits" class="detail-visits"></div>
+      </article>
+
+      <aside id="timelinePanel" class="timeline-panel" hidden>
+        <div class="timeline-panel-header">
+          <h2>Country Timeline</h2>
+          <button id="closeTimeline" class="icon-button" type="button">x</button>
+        </div>
+        <div id="timelineList" class="timeline-list"></div>
+      </aside>
+    </main>
+
+    <div id="modalBackdrop" class="modal-backdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-header">
+          <h2 id="modalTitle">Add New Place</h2>
+          <button id="closeModal" class="icon-button" type="button">x</button>
+        </div>
+
+        <form id="addForm" class="add-form">
+          <label>
+            Country or US state
+            <input id="placeInput" type="search" placeholder="Example: Italy or California" autocomplete="off" required />
+          </label>
+          <p id="validationMessage" class="validation-message">Type a place name to verify it.</p>
+
+          <label class="checkbox-row">
+            <input id="continuousInput" type="checkbox" />
+            Continuous
+          </label>
+
+          <div id="optionalFields" class="optional-fields">
+            <label id="yearField">
+              Year
+              <input id="yearInput" type="number" min="1900" max="2100" />
+            </label>
+            <label id="descriptionField">
+              <span id="descriptionLabel">Description</span>
+              <textarea id="descriptionInput" rows="4" placeholder="Add a favorite memory, route, or note."></textarea>
+            </label>
+          </div>
+
+          <button class="save-button" type="submit">Save Place</button>
+        </form>
+      </section>
+    </div>
+  </body>
+</html>
