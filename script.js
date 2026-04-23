@@ -1140,7 +1140,7 @@ function renderHighlights(place) {
   if (!highlights.length) return `<article class="detail-visit"><p>No highlights added yet.</p></article>`;
   return highlights.map((highlight, index) => {
     const text = highlight || "No highlight text added.";
-    return `<article class="detail-visit"><div class="detail-visit-actions"><button class="delete-entry-button" type="button" data-delete-index="${index}">Delete</button><button class="edit-entry-button" type="button" data-edit-index="${index}">Edit</button></div><div class="detail-visit-body"><p>${escapeHtml(text)}</p></div></article>`;
+    return `<article class="detail-visit"><div class="detail-visit-body"><p>${escapeHtml(text)}</p></div><div class="detail-visit-actions"><button class="delete-entry-button" type="button" data-delete-index="${index}">Delete</button><button class="edit-entry-button" type="button" data-edit-index="${index}">Edit</button></div></article>`;
   }).join("");
 }
 
@@ -1151,7 +1151,7 @@ function renderVisits(place) {
     const year = visit.year || "";
     const description = visit.description || "No description added.";
     const heading = year ? `<strong>${escapeHtml(year)}</strong>` : "";
-    return `<article class="detail-visit"><div class="detail-visit-actions"><button class="delete-entry-button" type="button" data-delete-index="${index}">Delete</button><button class="edit-entry-button" type="button" data-edit-index="${index}">Edit</button></div><div class="detail-visit-body">${heading}<p>${escapeHtml(description)}</p></div></article>`;
+    return `<article class="detail-visit"><div class="detail-visit-body">${heading}<p>${escapeHtml(description)}</p></div><div class="detail-visit-actions"><button class="delete-entry-button" type="button" data-delete-index="${index}">Delete</button><button class="edit-entry-button" type="button" data-edit-index="${index}">Edit</button></div></article>`;
   }).join("");
 }
 
