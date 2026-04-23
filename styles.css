@@ -415,8 +415,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--visited); }
 }
 
 .storage-badge {
-  position: absolute;
-  z-index: 4;
+  position: fixed;
+  z-index: 8;
   top: auto !important;
   right: 18px !important;
   bottom: 18px !important;
