@@ -291,6 +291,7 @@ function bindUi() {
     document.querySelector("#detailSlide").hidden = true;
     syncStorageBadgeLayer();
   });
+  document.querySelector("#deletePlaceButton").addEventListener("click", deleteCurrentPlace);
   document.querySelector("#editDetail").addEventListener("click", () => {
     if (app.detailKey) openEditModal(app.detailKey);
   });
@@ -1148,6 +1149,20 @@ function showDetail(place, kind, clickX = window.innerWidth / 2) {
     ? renderHighlights(place)
     : renderVisits(place);
   document.querySelector("#detailSlide").hidden = false;
+  syncStorageBadgeLayer();
+}
+
+async function deleteCurrentPlace() {
+  if (!app.detailKey) return;
+  const place = app.places.get(app.detailKey);
+  const name = place ? place.name : "this place";
+  if (!window.confirm(`Delete ${name} from this map?`)) return;
+
+  app.places.delete(app.detailKey);
+  await saveEntries();
+  updateRegionStyles();
+  refreshPanels();
+  document.querySelector("#detailSlide").hidden = true;
   syncStorageBadgeLayer();
 }
 
