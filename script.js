@@ -736,6 +736,7 @@ function positionStorageBadge() {
     document.body.appendChild(badge);
   }
   badge.style.position = "fixed";
+  badge.style.zIndex = "3";
   badge.style.top = "auto";
   badge.style.left = "auto";
   badge.style.bottom = "18px";

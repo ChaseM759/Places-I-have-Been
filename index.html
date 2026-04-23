@@ -114,12 +114,18 @@
       <div id="tooltip" class="tooltip" hidden></div>
 
       <article id="detailSlide" class="detail-slide" aria-live="polite" hidden>
-        <button id="closeDetail" class="close-button" type="button">Close</button>
-        <button id="editDetail" class="edit-button" type="button" hidden aria-label="Edit place">Edit</button>
-        <p id="detailType"></p>
-        <h2 id="detailTitle"></h2>
-        <p id="detailMeta"></p>
-        <p id="detailDescription"></p>
+        <div class="detail-header">
+          <div class="detail-header-copy">
+            <p id="detailType"></p>
+            <h2 id="detailTitle"></h2>
+            <p id="detailMeta"></p>
+            <p id="detailDescription"></p>
+          </div>
+          <div class="detail-header-actions">
+            <button id="closeDetail" class="close-button" type="button">Close</button>
+            <button id="editDetail" class="edit-button" type="button" hidden aria-label="Edit place">Edit</button>
+          </div>
+        </div>
         <div id="detailVisits" class="detail-visits"></div>
       </article>
 

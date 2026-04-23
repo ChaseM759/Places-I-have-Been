@@ -513,17 +513,6 @@ body:not(.menu-collapsed) .storage-badge {
   right: 24px;
   bottom: 24px;
   width: min(380px, calc(100% - 48px));
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "type close"
-    "title edit"
-    "meta ."
-    "description description"
-    "visits visits";
-  align-items: start;
-  column-gap: 18px;
-  row-gap: 8px;
   padding: 22px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -591,9 +580,27 @@ body:not(.menu-collapsed) .storage-badge {
   color: var(--muted);
 }
 
+.detail-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 18px;
+  margin-bottom: 16px;
+}
+
+.detail-header-copy {
+  min-width: 0;
+}
+
+.detail-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
 .detail-slide h2 {
-  grid-area: title;
-  margin: 0;
+  margin: 0 0 10px;
   font-size: 1.5rem;
 }
 
@@ -602,14 +609,10 @@ body:not(.menu-collapsed) .storage-badge {
   line-height: 1.6;
 }
 
-#detailMeta {
-  grid-area: meta;
-  margin: 0;
-}
+#detailMeta { margin: 0; }
 
 #detailDescription {
-  grid-area: description;
-  margin: 0;
+  margin: 10px 0 0;
 }
 
 .close-button, .icon-button {
@@ -621,32 +624,24 @@ body:not(.menu-collapsed) .storage-badge {
 }
 
 .close-button {
-  grid-area: close;
-  justify-self: end;
   padding: 0 10px;
   margin: 0;
 }
 
 .edit-button {
-  grid-area: edit;
-  justify-self: end;
-  align-self: center;
   margin: 0;
 }
 
 #detailType {
-  grid-area: type;
-  align-self: end;
   padding-top: 8px;
   border-top: 0;
-  margin: 0;
+  margin: 0 0 10px;
 }
 
 .detail-visits {
-  grid-area: visits;
   display: grid;
   gap: 10px;
-  margin-top: 16px;
+  margin-top: 0;
 }
 
 .detail-visit {
@@ -671,6 +666,7 @@ body:not(.menu-collapsed) .storage-badge {
 .detail-visit-body {
   min-width: 0;
   align-self: start;
+  padding-top: 2px;
 }
 
 .detail-visit strong {
