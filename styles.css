@@ -630,13 +630,23 @@ body:not(.menu-collapsed) .storage-badge {
 }
 
 .detail-visit {
-  position: relative;
-  padding: 10px 12px;
-  padding-right: 96px;
-  min-height: 84px;
+  display: grid;
+  gap: 10px;
+  padding: 10px 12px 12px;
   border-left: 4px solid var(--visited);
   border-radius: 8px;
   background: #080b0d;
+}
+
+.detail-visit-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.detail-visit-body {
+  min-width: 0;
 }
 
 .detail-visit strong {
@@ -651,16 +661,12 @@ body:not(.menu-collapsed) .storage-badge {
 }
 
 .delete-entry-button {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 68px;
-  height: 30px;
-  min-height: 30px;
+  width: 76px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 8px;
+  padding: 0 10px;
   border: 1px solid rgba(255, 121, 121, 0.55);
   border-radius: 8px;
   color: #fff;
@@ -674,16 +680,12 @@ body:not(.menu-collapsed) .storage-badge {
 }
 
 .edit-entry-button {
-  position: absolute;
-  top: 44px;
-  right: 8px;
-  width: 68px;
-  height: 30px;
-  min-height: 30px;
+  width: 76px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 8px;
+  padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   color: #03100a;
