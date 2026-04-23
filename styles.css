@@ -417,8 +417,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--visited); }
 .storage-badge {
   position: absolute;
   z-index: 4;
-  top: 18px;
   right: 18px;
+  bottom: 18px;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -426,6 +426,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--visited); }
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 800;
+}
+
+body:not(.menu-collapsed) .storage-badge {
+  right: 338px;
 }
 
 .storage-badge.is-remote {
@@ -833,7 +837,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--visited); }
   }
 
   .storage-badge {
-    top: 72px;
     right: 18px;
+    bottom: 18px;
   }
 }
