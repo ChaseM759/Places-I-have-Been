@@ -416,7 +416,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--visited); }
 
 .storage-badge {
   position: fixed;
-  z-index: 8;
+  z-index: 3;
   top: auto !important;
   right: 18px !important;
   bottom: 18px !important;
@@ -509,10 +509,21 @@ body:not(.menu-collapsed) .storage-badge {
 
 .detail-slide {
   position: absolute;
-  z-index: 4;
+  z-index: 9;
   right: 24px;
   bottom: 24px;
   width: min(380px, calc(100% - 48px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "type close"
+    "title edit"
+    "meta ."
+    "description description"
+    "visits visits";
+  align-items: start;
+  column-gap: 18px;
+  row-gap: 8px;
   padding: 22px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -532,7 +543,7 @@ body:not(.menu-collapsed) .storage-badge {
 
 .timeline-panel {
   position: absolute;
-  z-index: 4;
+  z-index: 9;
   top: 84px;
   left: 32px;
   width: min(360px, calc(100% - 48px));
@@ -580,20 +591,25 @@ body:not(.menu-collapsed) .storage-badge {
   color: var(--muted);
 }
 
-.detail-slide::after {
-  content: "";
-  display: block;
-  clear: both;
-}
-
 .detail-slide h2 {
-  margin-top: 8px;
+  grid-area: title;
+  margin: 0;
   font-size: 1.5rem;
 }
 
 #detailMeta, #detailDescription {
   color: var(--muted);
   line-height: 1.6;
+}
+
+#detailMeta {
+  grid-area: meta;
+  margin: 0;
+}
+
+#detailDescription {
+  grid-area: description;
+  margin: 0;
 }
 
 .close-button, .icon-button {
@@ -605,25 +621,29 @@ body:not(.menu-collapsed) .storage-badge {
 }
 
 .close-button {
-  clear: both;
-  display: block;
-  margin-left: auto;
+  grid-area: close;
+  justify-self: end;
   padding: 0 10px;
-  margin-bottom: 30px;
+  margin: 0;
 }
 
 .edit-button {
-  float: right;
-  margin-right: 8px;
-  margin-bottom: 10px;
+  grid-area: edit;
+  justify-self: end;
+  align-self: center;
+  margin: 0;
 }
 
 #detailType {
-  padding-top: 22px;
+  grid-area: type;
+  align-self: end;
+  padding-top: 8px;
   border-top: 0;
+  margin: 0;
 }
 
 .detail-visits {
+  grid-area: visits;
   display: grid;
   gap: 10px;
   margin-top: 16px;
@@ -632,7 +652,7 @@ body:not(.menu-collapsed) .storage-badge {
 .detail-visit {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  align-items: start;
   column-gap: 12px;
   row-gap: 10px;
   padding: 10px 12px 12px;
@@ -650,7 +670,7 @@ body:not(.menu-collapsed) .storage-badge {
 
 .detail-visit-body {
   min-width: 0;
-  align-self: center;
+  align-self: start;
 }
 
 .detail-visit strong {
