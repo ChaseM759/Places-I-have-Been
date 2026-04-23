@@ -513,6 +513,17 @@ body:not(.menu-collapsed) .storage-badge {
   right: 24px;
   bottom: 24px;
   width: min(380px, calc(100% - 48px));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "type close"
+    "title edit"
+    "meta meta"
+    "description description"
+    "visits visits";
+  align-items: start;
+  column-gap: 18px;
+  row-gap: 8px;
   padding: 22px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -581,26 +592,17 @@ body:not(.menu-collapsed) .storage-badge {
 }
 
 .detail-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  column-gap: 18px;
-  margin-bottom: 16px;
+  display: contents;
 }
 
-.detail-header-copy {
-  min-width: 0;
-}
-
+.detail-header-copy,
 .detail-header-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 12px;
+  display: contents;
 }
 
 .detail-slide h2 {
-  margin: 0 0 10px;
+  grid-area: title;
+  margin: 0;
   font-size: 1.5rem;
 }
 
@@ -609,9 +611,13 @@ body:not(.menu-collapsed) .storage-badge {
   line-height: 1.6;
 }
 
-#detailMeta { margin: 0; }
+#detailMeta {
+  grid-area: meta;
+  margin: 0;
+}
 
 #detailDescription {
+  grid-area: description;
   margin: 10px 0 0;
 }
 
@@ -624,24 +630,32 @@ body:not(.menu-collapsed) .storage-badge {
 }
 
 .close-button {
+  grid-area: close;
+  justify-self: end;
+  align-self: start;
   padding: 0 10px;
   margin: 0;
 }
 
 .edit-button {
+  grid-area: edit;
+  justify-self: end;
+  align-self: start;
   margin: 0;
 }
 
 #detailType {
-  padding-top: 8px;
+  grid-area: type;
+  padding-top: 0;
   border-top: 0;
-  margin: 0 0 10px;
+  margin: 0;
 }
 
 .detail-visits {
+  grid-area: visits;
   display: grid;
   gap: 10px;
-  margin-top: 0;
+  margin-top: 6px;
 }
 
 .detail-visit {
@@ -649,7 +663,7 @@ body:not(.menu-collapsed) .storage-badge {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
   column-gap: 12px;
-  row-gap: 10px;
+  row-gap: 8px;
   padding: 10px 12px 12px;
   border-left: 4px solid var(--visited);
   border-radius: 8px;
@@ -657,16 +671,18 @@ body:not(.menu-collapsed) .storage-badge {
 }
 
 .detail-visit-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: auto;
+  grid-template-rows: auto auto;
+  align-content: start;
+  justify-items: end;
   gap: 8px;
 }
 
 .detail-visit-body {
   min-width: 0;
   align-self: start;
-  padding-top: 2px;
+  padding-top: 0;
 }
 
 .detail-visit strong {

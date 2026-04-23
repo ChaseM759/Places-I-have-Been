@@ -276,6 +276,7 @@ function bindUi() {
   document.querySelector("#timelineToggle").addEventListener("click", toggleTimeline);
   document.querySelector("#closeTimeline").addEventListener("click", () => {
     document.querySelector("#timelinePanel").hidden = true;
+    syncStorageBadgeLayer();
   });
   document.querySelector("#searchForm").addEventListener("submit", handleSearch);
   document.querySelector("#continentToggle").addEventListener("click", toggleContinents);
@@ -288,6 +289,7 @@ function bindUi() {
   });
   document.querySelector("#closeDetail").addEventListener("click", () => {
     document.querySelector("#detailSlide").hidden = true;
+    syncStorageBadgeLayer();
   });
   document.querySelector("#editDetail").addEventListener("click", () => {
     if (app.detailKey) openEditModal(app.detailKey);
@@ -371,6 +373,7 @@ function setupAuth() {
     if (!user) {
       gate.hidden = false;
       document.body.classList.add("is-locked");
+      syncStorageBadgeLayer();
       app.profiles = [];
       app.places = new Map();
       if (app.hasStarted) {
@@ -383,6 +386,7 @@ function setupAuth() {
 
     gate.hidden = true;
     document.body.classList.remove("is-locked");
+    syncStorageBadgeLayer();
     if (!app.hasStarted) {
       app.hasStarted = true;
       await startApp();
@@ -719,6 +723,7 @@ function renderStorageBadge() {
   const badge = document.querySelector("#storageBadge");
   if (!badge) return;
   positionStorageBadge();
+  syncStorageBadgeLayer();
   badge.classList.remove("is-remote", "is-local");
   if (app.useRemoteData && app.db && app.currentUser) {
     badge.textContent = "Firebase connected";
@@ -736,11 +741,22 @@ function positionStorageBadge() {
     document.body.appendChild(badge);
   }
   badge.style.position = "fixed";
-  badge.style.zIndex = "3";
   badge.style.top = "auto";
   badge.style.left = "auto";
   badge.style.bottom = "18px";
   badge.style.right = document.body.classList.contains("menu-collapsed") ? "18px" : "338px";
+}
+
+function syncStorageBadgeLayer() {
+  const badge = document.querySelector("#storageBadge");
+  if (!badge) return;
+  const hasPopupOpen =
+    !document.querySelector("#authGate")?.hidden ||
+    !document.querySelector("#modalBackdrop")?.hidden ||
+    !document.querySelector("#detailSlide")?.hidden ||
+    !document.querySelector("#timelinePanel")?.hidden;
+
+  badge.style.zIndex = hasPopupOpen ? "1" : "3";
 }
 
 function renderAuthStatus() {
@@ -951,6 +967,7 @@ function renderTimeline() {
 function toggleTimeline() {
   const panel = document.querySelector("#timelinePanel");
   panel.hidden = !panel.hidden;
+  syncStorageBadgeLayer();
 }
 
 function openModal() {
@@ -964,6 +981,7 @@ function openModal() {
   document.querySelector("#descriptionInput").placeholder = "Add a favorite memory, route, or note.";
   document.querySelector(".save-button").textContent = "Save Place";
   document.querySelector("#modalBackdrop").hidden = false;
+  syncStorageBadgeLayer();
   document.querySelector("#placeInput").focus();
   validatePlaceInput();
 }
@@ -988,11 +1006,13 @@ function openEditModal(key) {
   document.querySelector("#validationMessage").classList.remove("is-invalid");
   document.querySelector("#validationMessage").classList.add("is-valid");
   document.querySelector("#modalBackdrop").hidden = false;
+  syncStorageBadgeLayer();
   document.querySelector(place.continuous ? "#descriptionInput" : "#yearInput").focus();
 }
 
 function closeModal() {
   document.querySelector("#modalBackdrop").hidden = true;
+  syncStorageBadgeLayer();
   document.querySelector("#addForm").reset();
   document.querySelector("#placeInput").disabled = false;
   document.querySelector("#continuousInput").closest("label").hidden = false;
@@ -1128,6 +1148,7 @@ function showDetail(place, kind, clickX = window.innerWidth / 2) {
     ? renderHighlights(place)
     : renderVisits(place);
   document.querySelector("#detailSlide").hidden = false;
+  syncStorageBadgeLayer();
 }
 
 function positionDetailSlide(clickX) {
