@@ -175,6 +175,7 @@ const app = {
   currentUser: null,
   authProvider: null,
   useRemoteData: false,
+  remoteStatus: "idle",
   hasStarted: false
 };
 
@@ -245,11 +246,18 @@ async function startApp() {
     });
 
     buildLookup();
-    loadProfilesFromLocal();
-    loadEntriesFromLocal();
+    if (app.currentUser && app.useRemoteData && app.db) {
+      await loadProfiles();
+      await loadEntries();
+    } else {
+      loadProfilesFromLocal();
+      loadEntriesFromLocal();
+    }
     renderMap();
     refreshPanels();
-    void syncRemoteState();
+    if (app.currentUser && app.useRemoteData && app.db) {
+      void syncRemoteState();
+    }
   } catch (error) {
     const svg = d3.select("#travelMap");
     svg.selectAll("*").remove();
@@ -352,10 +360,12 @@ function initializeDatabase() {
     app.db = firebase.firestore();
     app.authProvider = new firebase.auth.GoogleAuthProvider();
     app.useRemoteData = true;
+    app.remoteStatus = "ready";
   } catch (error) {
     app.auth = null;
     app.db = null;
     app.useRemoteData = false;
+    app.remoteStatus = "disabled";
   }
 }
 
@@ -424,29 +434,24 @@ async function signOutCurrentUser() {
 async function loadProfiles() {
   if (app.useRemoteData && app.db) {
     try {
-      await withTimeout(loadProfilesFromFirestore(), 6000);
+      await withTimeout(loadProfilesFromFirestore(), 15000);
+      app.remoteStatus = "connected";
       return;
     } catch (error) {
-      app.useRemoteData = false;
+      app.remoteStatus = "degraded";
     }
   }
   loadProfilesFromLocal();
 }
 
 async function loadProfilesFromFirestore() {
-  try {
-    const snapshot = await profileCollectionRef().get();
-    if (snapshot.empty) {
-      await migrateLocalProfilesToFirestore();
-      const migratedSnapshot = await profileCollectionRef().get();
-      app.profiles = migratedSnapshot.docs.map((doc) => ({ id: doc.id, name: doc.data().name || doc.id }));
-    } else {
-      app.profiles = snapshot.docs.map((doc) => ({ id: doc.id, name: doc.data().name || doc.id }));
-    }
-  } catch (error) {
-    app.useRemoteData = false;
-    loadProfilesFromLocal();
-    return;
+  const snapshot = await profileCollectionRef().get();
+  if (snapshot.empty) {
+    await migrateLocalProfilesToFirestore();
+    const migratedSnapshot = await profileCollectionRef().get();
+    app.profiles = migratedSnapshot.docs.map((doc) => ({ id: doc.id, name: doc.data().name || doc.id }));
+  } else {
+    app.profiles = snapshot.docs.map((doc) => ({ id: doc.id, name: doc.data().name || doc.id }));
   }
 
   if (!app.profiles.length) {
@@ -502,10 +507,11 @@ function saveProfileState() {
 async function loadEntries() {
   if (app.useRemoteData && app.db) {
     try {
-      await withTimeout(loadEntriesFromFirestore(), 6000);
+      await withTimeout(loadEntriesFromFirestore(), 15000);
+      app.remoteStatus = "connected";
       return;
     } catch (error) {
-      app.useRemoteData = false;
+      app.remoteStatus = "degraded";
     }
   }
   loadEntriesFromLocal();
@@ -513,19 +519,13 @@ async function loadEntries() {
 
 async function loadEntriesFromFirestore() {
   let entries = defaultEntries;
-  try {
-    const doc = await profileCollectionRef().doc(app.activeProfileId).get();
-    if (doc.exists) {
-      const data = doc.data() || {};
-      if (Array.isArray(data.entries)) entries = data.entries;
-    } else {
-      const profile = app.profiles.find((item) => item.id === app.activeProfileId) || { id: app.activeProfileId, name: app.activeProfileId };
-      await ensureRemoteProfile(profile, entries);
-    }
-  } catch (error) {
-    app.useRemoteData = false;
-    loadEntriesFromLocal();
-    return;
+  const doc = await profileCollectionRef().doc(app.activeProfileId).get();
+  if (doc.exists) {
+    const data = doc.data() || {};
+    if (Array.isArray(data.entries)) entries = data.entries;
+  } else {
+    const profile = app.profiles.find((item) => item.id === app.activeProfileId) || { id: app.activeProfileId, name: app.activeProfileId };
+    await ensureRemoteProfile(profile, entries);
   }
 
   app.places = new Map(entries.filter((entry) => entry.key).map(normalizeEntry).map((entry) => [entry.key, entry]));
@@ -546,15 +546,19 @@ function loadEntriesFromLocal() {
       .map(normalizeEntry)
       .map((entry) => [entry.key, entry])
   );
-  saveEntries();
 }
 
 async function saveEntries() {
   localStorage.setItem(profileStorageKey(app.activeProfileId), JSON.stringify([...app.places.values()]));
   if (app.useRemoteData && app.db) {
-    const profile = app.profiles.find((item) => item.id === app.activeProfileId) || { id: app.activeProfileId, name: app.activeProfileId };
-    await ensureRemoteProfile(profile, [...app.places.values()]);
-    return;
+    try {
+      const profile = app.profiles.find((item) => item.id === app.activeProfileId) || { id: app.activeProfileId, name: app.activeProfileId };
+      await ensureRemoteProfile(profile, [...app.places.values()]);
+      app.remoteStatus = "connected";
+      return;
+    } catch (error) {
+      app.remoteStatus = "degraded";
+    }
   }
 }
 
@@ -726,9 +730,12 @@ function renderStorageBadge() {
   positionStorageBadge();
   syncStorageBadgeLayer();
   badge.classList.remove("is-remote", "is-local");
-  if (app.useRemoteData && app.db && app.currentUser) {
+  if (app.useRemoteData && app.db && app.currentUser && app.remoteStatus === "connected") {
     badge.textContent = "Firebase connected";
     badge.classList.add("is-remote");
+  } else if (app.useRemoteData && app.db && app.currentUser) {
+    badge.textContent = "Firebase retrying";
+    badge.classList.add("is-local");
   } else {
     badge.textContent = app.auth ? "Sign in required" : "Local only";
     badge.classList.add("is-local");
