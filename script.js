@@ -176,6 +176,9 @@ const app = {
   authProvider: null,
   useRemoteData: false,
   remoteStatus: "idle",
+  remoteProfilesLoaded: false,
+  remoteEntriesLoaded: false,
+  remoteEntriesProfileId: null,
   hasStarted: false
 };
 
@@ -249,15 +252,14 @@ async function startApp() {
     if (app.currentUser && app.useRemoteData && app.db) {
       await loadProfiles();
       await loadEntries();
-    } else {
+    } else if (!app.currentUser) {
       loadProfilesFromLocal();
       loadEntriesFromLocal();
+    } else {
+      throw new Error("Firebase data is unavailable.");
     }
     renderMap();
     refreshPanels();
-    if (app.currentUser && app.useRemoteData && app.db) {
-      void syncRemoteState();
-    }
   } catch (error) {
     const svg = d3.select("#travelMap");
     svg.selectAll("*").remove();
@@ -361,11 +363,17 @@ function initializeDatabase() {
     app.authProvider = new firebase.auth.GoogleAuthProvider();
     app.useRemoteData = true;
     app.remoteStatus = "ready";
+    app.remoteProfilesLoaded = false;
+    app.remoteEntriesLoaded = false;
+    app.remoteEntriesProfileId = null;
   } catch (error) {
     app.auth = null;
     app.db = null;
     app.useRemoteData = false;
     app.remoteStatus = "disabled";
+    app.remoteProfilesLoaded = false;
+    app.remoteEntriesLoaded = false;
+    app.remoteEntriesProfileId = null;
   }
 }
 
@@ -384,6 +392,10 @@ function setupAuth() {
     if (!user) {
       gate.hidden = false;
       document.body.classList.add("is-locked");
+      app.remoteStatus = "ready";
+      app.remoteProfilesLoaded = false;
+      app.remoteEntriesLoaded = false;
+      app.remoteEntriesProfileId = null;
       syncStorageBadgeLayer();
       app.profiles = [];
       app.places = new Map();
@@ -397,6 +409,10 @@ function setupAuth() {
 
     gate.hidden = true;
     document.body.classList.remove("is-locked");
+    app.remoteStatus = "ready";
+    app.remoteProfilesLoaded = false;
+    app.remoteEntriesLoaded = false;
+    app.remoteEntriesProfileId = null;
     syncStorageBadgeLayer();
     if (!app.hasStarted) {
       app.hasStarted = true;
@@ -433,26 +449,25 @@ async function signOutCurrentUser() {
 
 async function loadProfiles() {
   if (app.useRemoteData && app.db) {
+    app.remoteProfilesLoaded = false;
     try {
       await withTimeout(loadProfilesFromFirestore(), 15000);
-      app.remoteStatus = "connected";
+      app.remoteProfilesLoaded = true;
+      app.remoteStatus = "ready";
       return;
     } catch (error) {
       app.remoteStatus = "degraded";
     }
+  }
+  if (app.currentUser) {
+    throw new Error("Could not load Firebase profiles.");
   }
   loadProfilesFromLocal();
 }
 
 async function loadProfilesFromFirestore() {
   const snapshot = await profileCollectionRef().get();
-  if (snapshot.empty) {
-    await migrateLocalProfilesToFirestore();
-    const migratedSnapshot = await profileCollectionRef().get();
-    app.profiles = migratedSnapshot.docs.map((doc) => ({ id: doc.id, name: doc.data().name || doc.id }));
-  } else {
-    app.profiles = snapshot.docs.map((doc) => ({ id: doc.id, name: doc.data().name || doc.id }));
-  }
+  app.profiles = snapshot.docs.map((doc) => ({ id: doc.id, name: doc.data().name || doc.id }));
 
   if (!app.profiles.length) {
     app.profiles = [{ id: "default", name: "My Map" }];
@@ -506,13 +521,20 @@ function saveProfileState() {
 
 async function loadEntries() {
   if (app.useRemoteData && app.db) {
+    app.remoteEntriesLoaded = false;
+    app.remoteEntriesProfileId = null;
     try {
       await withTimeout(loadEntriesFromFirestore(), 15000);
-      app.remoteStatus = "connected";
+      app.remoteEntriesLoaded = true;
+      app.remoteEntriesProfileId = app.activeProfileId;
+      app.remoteStatus = "ready";
       return;
     } catch (error) {
       app.remoteStatus = "degraded";
     }
+  }
+  if (app.currentUser) {
+    throw new Error("Could not load Firebase entries.");
   }
   loadEntriesFromLocal();
 }
@@ -549,12 +571,14 @@ function loadEntriesFromLocal() {
 }
 
 async function saveEntries() {
-  localStorage.setItem(profileStorageKey(app.activeProfileId), JSON.stringify([...app.places.values()]));
+  if (!app.currentUser) {
+    localStorage.setItem(profileStorageKey(app.activeProfileId), JSON.stringify([...app.places.values()]));
+  }
   if (app.useRemoteData && app.db) {
     try {
       const profile = app.profiles.find((item) => item.id === app.activeProfileId) || { id: app.activeProfileId, name: app.activeProfileId };
       await ensureRemoteProfile(profile, [...app.places.values()]);
-      app.remoteStatus = "connected";
+      app.remoteStatus = "ready";
       return;
     } catch (error) {
       app.remoteStatus = "degraded";
@@ -730,7 +754,12 @@ function renderStorageBadge() {
   positionStorageBadge();
   syncStorageBadgeLayer();
   badge.classList.remove("is-remote", "is-local");
-  if (app.useRemoteData && app.db && app.currentUser && app.remoteStatus === "connected") {
+  const fullyLoaded =
+    app.remoteStatus !== "degraded" &&
+    app.remoteProfilesLoaded &&
+    app.remoteEntriesLoaded &&
+    app.remoteEntriesProfileId === app.activeProfileId;
+  if (app.useRemoteData && app.db && app.currentUser && fullyLoaded) {
     badge.textContent = "Firebase connected";
     badge.classList.add("is-remote");
   } else if (app.useRemoteData && app.db && app.currentUser) {
@@ -1411,14 +1440,18 @@ function withTimeout(promise, timeoutMs) {
 }
 
 async function syncRemoteState() {
-  if (!app.useRemoteData || !app.db) return;
+  if (!app.currentUser || !app.useRemoteData || !app.db) return;
 
   try {
-    await withTimeout(loadProfilesFromFirestore(), 6000);
-    await withTimeout(loadEntriesFromFirestore(), 6000);
+    await withTimeout(loadProfilesFromFirestore(), 15000);
+    app.remoteProfilesLoaded = true;
+    await withTimeout(loadEntriesFromFirestore(), 15000);
+    app.remoteEntriesLoaded = true;
+    app.remoteEntriesProfileId = app.activeProfileId;
+    app.remoteStatus = "ready";
     refreshPanels();
     updateRegionStyles();
   } catch (error) {
-    app.useRemoteData = false;
+    app.remoteStatus = "degraded";
   }
 }
